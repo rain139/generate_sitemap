@@ -20,7 +20,7 @@ class ParserLink:
         return sorted(self.__urls, key=len)
 
     def __handler_html(self, html) -> bool:
-
+        # source / home / egor / parser / venv / bin / activate & & / usr / bin / python3
         if type(html) is bool:
             return html
 
@@ -39,7 +39,7 @@ class ParserLink:
                 if re.search('http|wwww', href) and href.find(self.__site_url_home) == -1:
                     continue
 
-                if re.search('sort=|mailto:|viber:|whatsapp:', href):
+                if re.search('sort=|mailto:|viber:|whatsapp:|modal_class', href):
                     continue
 
                 if href.find(self.__site_url_home) == -1:
