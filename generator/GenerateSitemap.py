@@ -19,7 +19,7 @@ class Sitemap:
 
         self.__set_bottom()
 
-        file = open('sitemap.xml', "w")
+        file = open('/home/ksena/public_html/sitemap.xml', "w")
         file.write(self.__xml)
 
     def __get_priory(self, url: str) -> float:
