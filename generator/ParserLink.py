@@ -36,7 +36,7 @@ class ParserLink:
 
                 href = str(tag.get('href'))
 
-                if re.search('//', href):
+                if re.search('[a-zA-Z]//', href):
                     continue
 
                 if re.search('http|wwww', href) and href.find(self.__site_url_home) == -1:
