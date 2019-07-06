@@ -42,7 +42,7 @@ class ParserLink:
                 if re.search('http|wwww', href) and href.find(self.__site_url_home) == -1:
                     continue
 
-                if re.search('sort=|mailto:|viber:|whatsapp:|modal_class', href):
+                if re.search('sort=|mailto:|viber:|whatsapp:|modal_class|changeView', href):
                     continue
 
                 if href.find(self.__site_url_home) == -1:

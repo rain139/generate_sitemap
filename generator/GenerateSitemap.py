@@ -1,7 +1,7 @@
 import re
 from generator.Db import Db
 import sys
-from generator.Helpers import env
+from generator.Helpers import env,send_telegram
 from pymongo import MongoClient
 
 
@@ -94,30 +94,62 @@ class Sitemap:
             self.__list_page_updated[updated['url'].strip('/')] = updated['updated']
 
     def __get_last_updated_blog(self)-> str:
-        return ''
+        client = MongoClient()
+        db = client.ksena
+        res = db.blogArticles.find_one(sort=[("created", -1)])
+        return res['created']
 
     def __get_lastmod(self, url: str) -> str:
         date = '2019-07-03 22:00:50'
 
         url = url.strip('/')
 
-        if url == 'https://ksena.com.ua/catalog' or url == 'https://ksena.com.ua' or (
-                re.search('page=', url) and re.search('catalog', url)):
+        if url == 'https://ksena.com.ua/catalog' or url == 'https://ksena.com.ua' \
+                or (re.search('page=', url) and re.search('catalog', url)):
             date = self.__max_last_update_catalog()
+        elif re.search('catalog', url) and not re.search('.html', url) and len(url.split('/')) > 4:
+            purl = url.split('/')[len(url.split('/'))-1]
+            date = self.__get_last_updated_categories(purl)
         elif url in self.__list_page_updated:
-            date = self.__list_page_updated[url]
+            date = str(self.__list_page_updated[url])
         elif url in self.__catalog:
             date = self.__catalog[url]['updated']
-        elif self.__blog and re.search('blog',url):
+        elif re.search('.html',url) and re.search('/blog', url):
+
             for key,value in self.__blog.items():
                 if re.search(key,url):
                     date = self.__blog[key]['updated']
                     del self.__blog[key]
                     break
-        elif re.search('blog', url):
+
+        elif re.search('/blog', url):
             date = self.__get_last_updated_blog()
 
-        return date.replace(' ', 'T') + '+00:00'
+        try:
+            return date.replace(' ', 'T') + '+00:00'
+        except:
+            print(url)
+            send_telegram('Generate sitemap error {url}'.format(url=url))
+            sys.exit(4)
+
+    def __get_last_updated_categories(self, purl: str) -> str:
+        cursor = Db().connect().cursor(dictionary=True)
+        cursor.execute(
+            'SELECT MAX(IFNULL(`t`.`updated`,`t`.`created`)) `updated`,`c`.`lid` FROM `category` `c` '
+            'LEFT JOIN tovar_categories `tc` ON `tc`.`Id_categor` = `c`.`lid` '
+            'LEFT JOIN `tovars` `t` ON `t`.`lid` = `tc`.`lid_tovar` '
+            'WHERE `c`.`purl` = %s', [purl])
+        max_updated = cursor.fetchone()
+
+        if not max_updated['updated']:
+            cursor.execute(
+                'SELECT MAX(IFNULL(`t`.`updated`,`t`.`created`)) `updated` FROM `category` `c` '
+                'LEFT JOIN tovar_categories `tc` ON `tc`.`Id_categor` = `c`.`lid` '
+                'LEFT JOIN `tovars` `t` ON `t`.`lid` = `tc`.`lid_tovar` '
+                'WHERE `c`.`parent` = %s', [max_updated['lid']])
+            max_updated = cursor.fetchone()
+
+        return max_updated['updated']
 
     def __set_block__url(self, url: str, priory: float)->None:
         date = self.__get_lastmod(url)
