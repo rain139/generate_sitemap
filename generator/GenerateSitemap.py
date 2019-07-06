@@ -1,5 +1,7 @@
-import datetime
 import re
+from generator.Db import Db
+import sys
+from generator.Helpers import env
 
 
 class Sitemap:
@@ -7,13 +9,35 @@ class Sitemap:
     __xml = ''
     __site_home = ''
     __dir_project = ''
+    __catalog = {}
+    __blog = []
+    __list_page_updated = {}
 
-    def __init__(self, links: list, site_home: str, dir_project: str):
+    def __init__(self, links: list, site_home: str):
         self.__links = links
         self.__site_home = site_home
-        self.__dir_project = dir_project.strip('/')
+        self.__dir_project = env('DIR_PROJECT').strip('/')
+        self.__set_catalog_products()
+        self.__set_blog_articles()
+        self.__set_last_updated_seo()
+
+    def __set_catalog_products(self) -> None:
+        cursor = Db().connect().cursor(dictionary=True)
+
+        cursor.execute('SELECT id,CONCAT(purl,".html") `purl`,IFNULL(updated,created) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
+
+        tovars = cursor.fetchall()
+
+        for product in tovars:
+            self.__catalog[product['purl']] = {'id': product['id'], 'updated': product['updated']}
+
+        cursor.close()
+
+    def __set_blog_articles(self)-> None:
+        self.__blog = []
 
     def generate(self):
+
         self.__set_header()
 
         for url in self.__links:
@@ -50,13 +74,42 @@ class Sitemap:
                      '<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->\n\n\n' \
 
 
+    def __max_last_update_catalog(self) -> str:
+        cursor = Db().connect().cursor(dictionary=True)
+        cursor.execute(
+            'SELECT MAX(IFNULL(updated,created)) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
+        max_updated = cursor.fetchone()
+        return max_updated['updated']
+
+    def __set_last_updated_seo(self) -> None:
+        cursor = Db().connect().cursor(dictionary=True)
+        cursor.execute(
+            'SELECT CONCAT("{site}",IFNULL(url,"")) `url`,`updated` FROM `pages`'.format(site=self.__site_home))
+        max_updated = cursor.fetchall()
+        for updated in max_updated:
+            self.__list_page_updated[updated['url'].strip('/')] = updated['updated']
+
+    def __get_lastmod(self, url: str) -> str:
+        date = '2019-07-03 22:00:50'
+
+        url = url.strip('/')
+
+        if url == 'https://ksena.com.ua/catalog' or url == 'https://ksena.com.ua':
+            date = self.__max_last_update_catalog()
+
+        elif url in self.__list_page_updated:
+            date = self.__list_page_updated[url]
+
+
+
+        return date.replace(' ', 'T') + '+00:00'
+
     def __set_block__url(self, url: str, priory: float)->None:
-        today = datetime.datetime.today()
-        date = today.strftime("%Y-%m-%d")
+        date = self.__get_lastmod(url)
 
         self.__xml +='<url>\n'\
         '   <loc>{site}</loc>\n'\
-        '   <lastmod>{date}T12:41:53+00:00</lastmod>\n'\
+        '   <lastmod>{date}</lastmod>\n'\
         '   <priority>{priory}</priority>\n'\
         '</url>\n'.format(site=url, date=date, priory=priory)
 
