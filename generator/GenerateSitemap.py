@@ -6,20 +6,22 @@ class Sitemap:
     __links = []
     __xml = ''
     __site_home = ''
+    __dir_project = ''
 
-    def __init__(self, links: list, site_home: str):
+    def __init__(self, links: list, site_home: str, dir_project: str):
         self.__links = links
         self.__site_home = site_home
+        self.__dir_project = dir_project.strip('/')
 
     def generate(self):
         self.__set_header()
 
         for url in self.__links:
-            self.__set_block__url(url,self.__get_priory(url))
+            self.__set_block__url(url, self.__get_priory(url))
 
         self.__set_bottom()
 
-        file = open('/home/ksena/public_html/sitemap.xml', "w")
+        file = open('/' + self.__dir_project + '/sitemap.xml', "w")
         file.write(self.__xml)
 
     def __get_priory(self, url: str) -> float:
