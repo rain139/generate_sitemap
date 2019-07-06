@@ -134,9 +134,9 @@ class Sitemap:
         elif re.search('.html',url) and re.search('/blog', url):
 
             for key,value in self.__blog.items():
-                if re.search(key,url):
-                    date = self.__blog[key]['updated']
-                    del self.__blog[key]
+                if re.search(str(key),url):
+                    date = self.__blog[str(key)]['updated']
+                    del self.__blog[str(key)]
                     break
 
         elif re.search('/blog', url):
