@@ -133,10 +133,10 @@ class Sitemap:
             date = self.__catalog[url]['updated']
         elif re.search('.html',url) and re.search('/blog', url):
 
-            for key,value in self.__blog.items():
-                if re.search(str(key),url):
-                    date = self.__blog[str(key)]['updated']
-                    del self.__blog[str(key)]
+            for key, value in self.__blog.items():
+                if re.search(key, url):
+                    date = self.__blog[key]
+                    del self.__blog[key]
                     break
 
         elif re.search('/blog', url):
