@@ -2,6 +2,7 @@ import re
 from generator.Db import Db
 import sys
 from generator.Helpers import env
+from pymongo import MongoClient
 
 
 class Sitemap:
@@ -10,7 +11,7 @@ class Sitemap:
     __site_home = ''
     __dir_project = ''
     __catalog = {}
-    __blog = []
+    __blog = {}
     __list_page_updated = {}
 
     def __init__(self, links: list, site_home: str):
@@ -34,7 +35,10 @@ class Sitemap:
         cursor.close()
 
     def __set_blog_articles(self)-> None:
-        self.__blog = []
+        client = MongoClient()
+        db = client.ksena
+        for article in db.blogArticles.find():
+            self.__blog[article['purl']+'.html'] = article['created']
 
     def generate(self):
 
@@ -89,18 +93,29 @@ class Sitemap:
         for updated in max_updated:
             self.__list_page_updated[updated['url'].strip('/')] = updated['updated']
 
+    def __get_last_updated_blog(self)-> str:
+        return ''
+
     def __get_lastmod(self, url: str) -> str:
         date = '2019-07-03 22:00:50'
 
         url = url.strip('/')
 
-        if url == 'https://ksena.com.ua/catalog' or url == 'https://ksena.com.ua':
+        if url == 'https://ksena.com.ua/catalog' or url == 'https://ksena.com.ua' or (
+                re.search('page=', url) and re.search('catalog', url)):
             date = self.__max_last_update_catalog()
-
         elif url in self.__list_page_updated:
             date = self.__list_page_updated[url]
-
-
+        elif url in self.__catalog:
+            date = self.__catalog[url]['updated']
+        elif self.__blog and re.search('blog',url):
+            for key,value in self.__blog.items():
+                if re.search(key,url):
+                    date = self.__blog[key]['updated']
+                    del self.__blog[key]
+                    break
+        elif re.search('blog', url):
+            date = self.__get_last_updated_blog()
 
         return date.replace(' ', 'T') + '+00:00'
 
