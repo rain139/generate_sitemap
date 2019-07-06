@@ -1,5 +1,5 @@
 import mysql.connector
-from generator.Helpers import env
+from generator.Helpers import env,send_telegram
 
 
 class Db:
@@ -14,5 +14,8 @@ class Db:
 
     class __Mysql:
         def connect(self):
-            return mysql.connector.connect(host=env('DB_HOST'), database=env('DB_DATABASE'), user=env('DB_USERNAME'),
+            try:
+                return mysql.connector.connect(host=env('DB_HOST'), database=env('DB_DATABASE'), user=env('DB_USERNAME'),
                                            password=env('DB_PASSWORD'))
+            except:
+                send_telegram('Error connect')

@@ -23,11 +23,14 @@ class Sitemap:
         self.__set_last_updated_seo()
 
     def __set_catalog_products(self) -> None:
-        cursor = Db().connect().cursor(dictionary=True)
 
-        cursor.execute('SELECT id,CONCAT(purl,".html") `purl`,IFNULL(updated,created) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
-
-        tovars = cursor.fetchall()
+        try:
+            cursor = Db().connect().cursor(dictionary=True)
+            cursor.execute('SELECT id,CONCAT(purl,".html") `purl`,IFNULL(updated,created) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
+            tovars = cursor.fetchall()
+        except Exception as e:
+            send_telegram('Sitemap ' + str(e))
+            sys.exit()
 
         for product in tovars:
             self.__catalog[product['purl']] = {'id': product['id'], 'updated': product['updated']}
@@ -35,10 +38,13 @@ class Sitemap:
         cursor.close()
 
     def __set_blog_articles(self)-> None:
-        client = MongoClient()
-        db = client.ksena
-        for article in db.blogArticles.find():
-            self.__blog[article['purl']+'.html'] = article['created']
+        try:
+            client = MongoClient()
+            db = client.ksena
+            for article in db.blogArticles.find():
+                self.__blog[article['purl']+'.html'] = article['created']
+        except Exception as e:
+            send_telegram('Sitemap ' +str(e))
 
     def generate(self):
 
@@ -48,9 +54,11 @@ class Sitemap:
             self.__set_block__url(url, self.__get_priory(url))
 
         self.__set_bottom()
-
-        file = open('/' + self.__dir_project + '/sitemap.xml', "w")
-        file.write(self.__xml)
+        try:
+            file = open('/' + self.__dir_project + '/sitemap.xml', "w")
+            file.write(self.__xml)
+        except Exception as e:
+            send_telegram('Sitemap ' +str(e))
 
     def __get_priory(self, url: str) -> float:
 
@@ -79,25 +87,34 @@ class Sitemap:
 
 
     def __max_last_update_catalog(self) -> str:
-        cursor = Db().connect().cursor(dictionary=True)
-        cursor.execute(
-            'SELECT MAX(IFNULL(updated,created)) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
-        max_updated = cursor.fetchone()
-        return max_updated['updated']
+        try:
+            cursor = Db().connect().cursor(dictionary=True)
+            cursor.execute(
+                'SELECT MAX(IFNULL(updated,created)) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
+            max_updated = cursor.fetchone()
+            return max_updated['updated']
+        except Exception as e:
+            send_telegram('Sitemap ' + str(e))
 
     def __set_last_updated_seo(self) -> None:
-        cursor = Db().connect().cursor(dictionary=True)
-        cursor.execute(
-            'SELECT CONCAT("{site}",IFNULL(url,"")) `url`,`updated` FROM `pages`'.format(site=self.__site_home))
-        max_updated = cursor.fetchall()
-        for updated in max_updated:
-            self.__list_page_updated[updated['url'].strip('/')] = updated['updated']
+        try:
+            cursor = Db().connect().cursor(dictionary=True)
+            cursor.execute(
+                'SELECT CONCAT("{site}",IFNULL(url,"")) `url`,`updated` FROM `pages`'.format(site=self.__site_home))
+            max_updated = cursor.fetchall()
+            for updated in max_updated:
+                self.__list_page_updated[updated['url'].strip('/')] = updated['updated']
+        except Exception as e:
+            send_telegram('Sitemap ' + str(e))
 
     def __get_last_updated_blog(self)-> str:
-        client = MongoClient()
-        db = client.ksena
-        res = db.blogArticles.find_one(sort=[("created", -1)])
-        return res['created']
+        try:
+            client = MongoClient()
+            db = client.ksena
+            res = db.blogArticles.find_one(sort=[("created", -1)])
+            return res['created']
+        except Exception as e:
+            send_telegram('Sitemap ' + str(e))
 
     def __get_lastmod(self, url: str) -> str:
         date = '2019-07-03 22:00:50'
@@ -127,29 +144,32 @@ class Sitemap:
 
         try:
             return date.replace(' ', 'T') + '+00:00'
-        except:
+        except Exception as e:
             print(url)
-            send_telegram('Generate sitemap error {url}'.format(url=url))
+            send_telegram('Generate sitemap error {url} {e}'.format(url=url,e=e))
             sys.exit(4)
 
     def __get_last_updated_categories(self, purl: str) -> str:
-        cursor = Db().connect().cursor(dictionary=True)
-        cursor.execute(
-            'SELECT MAX(IFNULL(`t`.`updated`,`t`.`created`)) `updated`,`c`.`lid` FROM `category` `c` '
-            'LEFT JOIN tovar_categories `tc` ON `tc`.`Id_categor` = `c`.`lid` '
-            'LEFT JOIN `tovars` `t` ON `t`.`lid` = `tc`.`lid_tovar` '
-            'WHERE `c`.`purl` = %s', [purl])
-        max_updated = cursor.fetchone()
-
-        if not max_updated['updated']:
+        try:
+            cursor = Db().connect().cursor(dictionary=True)
             cursor.execute(
-                'SELECT MAX(IFNULL(`t`.`updated`,`t`.`created`)) `updated` FROM `category` `c` '
+                'SELECT MAX(IFNULL(`t`.`updated`,`t`.`created`)) `updated`,`c`.`lid` FROM `category` `c` '
                 'LEFT JOIN tovar_categories `tc` ON `tc`.`Id_categor` = `c`.`lid` '
                 'LEFT JOIN `tovars` `t` ON `t`.`lid` = `tc`.`lid_tovar` '
-                'WHERE `c`.`parent` = %s', [max_updated['lid']])
+                'WHERE `c`.`purl` = %s', [purl])
             max_updated = cursor.fetchone()
 
-        return max_updated['updated']
+            if not max_updated['updated']:
+                cursor.execute(
+                    'SELECT MAX(IFNULL(`t`.`updated`,`t`.`created`)) `updated` FROM `category` `c` '
+                    'LEFT JOIN tovar_categories `tc` ON `tc`.`Id_categor` = `c`.`lid` '
+                    'LEFT JOIN `tovars` `t` ON `t`.`lid` = `tc`.`lid_tovar` '
+                    'WHERE `c`.`parent` = %s', [max_updated['lid']])
+                max_updated = cursor.fetchone()
+
+            return max_updated['updated']
+        except Exception as e:
+            send_telegram('Sitemap ' + str(e))
 
     def __set_block__url(self, url: str, priory: float)->None:
         date = self.__get_lastmod(url)
