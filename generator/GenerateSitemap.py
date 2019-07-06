@@ -33,7 +33,7 @@ class Sitemap:
             sys.exit()
 
         for product in tovars:
-            self.__catalog[product['purl']] = {'id': product['id'], 'updated': product['updated']}
+            self.__catalog[product['purl'].decode("utf-8")] = {'id': product['id'], 'updated': product['updated']}
 
         cursor.close()
 
@@ -141,6 +141,8 @@ class Sitemap:
 
         elif re.search('/blog', url):
             date = self.__get_last_updated_blog()
+
+        date = str(date)
 
         try:
             return date.replace(' ', 'T') + '+00:00'
