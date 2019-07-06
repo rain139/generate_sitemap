@@ -30,13 +30,16 @@ class ParserLink:
             except Exception as e:
                 return self.__handler_exception(e, '\033[91m html error parse  \033[0m')
 
-            all_tag_h2 = list(set(soup.find('h2')))
+            try:
+                all_tag_h2 = list(set(soup.find('h2')))
 
-            if len(all_tag_h2) == 1 and all_tag_h2[0] == "404":
-                if self.__urls_tmp:
-                    return True
-                else:
-                    return False
+                if len(all_tag_h2) == 1 and all_tag_h2[0] == "404":
+                    if self.__urls_tmp:
+                        return True
+                    else:
+                        return False
+            except TypeError:
+                print('None h2 tag')
 
             all_tag_a = list(set(soup.findAll('a')))
 
