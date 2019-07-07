@@ -117,21 +117,21 @@ class Sitemap:
             send_telegram('Sitemap ' + str(e))
 
     def __get_lastmod(self, url: str) -> str:
-        date = env('START_DATE','2019-07-03 22:00:50')
+        date = env('START_DATE', '2019-07-03 22:00:50')
 
         url = url.strip('/')
+        purl = url.split('/')[len(url.split('/')) - 1]
 
         if url == 'https://ksena.com.ua/catalog' or url == 'https://ksena.com.ua' \
                 or (re.search('page=', url) and re.search('catalog', url)):
             date = self.__max_last_update_catalog()
         elif re.search('catalog', url) and not re.search('.html', url) and len(url.split('/')) > 4:
-            purl = url.split('/')[len(url.split('/'))-1]
             date = self.__get_last_updated_categories(purl)
         elif url in self.__list_page_updated:
             date = str(self.__list_page_updated[url])
-        elif url in self.__catalog:
-            date = self.__catalog[url]['updated']
-        elif re.search('.html',url) and re.search('/blog', url):
+        elif purl in self.__catalog:
+            date = self.__catalog[purl]['updated']
+        elif re.search('.html', url) and re.search('/blog', url):
 
             for key, value in self.__blog.items():
                 if re.search(key, url):
