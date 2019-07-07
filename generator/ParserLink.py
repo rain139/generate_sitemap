@@ -30,17 +30,6 @@ class ParserLink:
             except Exception as e:
                 return self.__handler_exception(e, '\033[91m html error parse  \033[0m')
 
-            try:
-                all_tag_h2 = list(set(soup.find('h2')))
-
-                if len(all_tag_h2) == 1 and all_tag_h2[0] == "404":
-                    if self.__urls_tmp:
-                        return True
-                    else:
-                        return False
-            except TypeError:
-                print('None h2 tag')
-
             all_tag_a = list(set(soup.findAll('a')))
 
             for tag in all_tag_a:
@@ -69,17 +58,21 @@ class ParserLink:
         return False
 
     def __open_url(self):
-        try:
-            if self.__urls and self.__urls_tmp:
-                url = self.__urls_tmp.pop()
+        if self.__urls and self.__urls_tmp:
+            url = self.__urls_tmp.pop()
+            try:
                 print("url={url} temp_url={url_tmp}".format(url=self.__urls.__len__(), url_tmp=self.__urls_tmp.__len__()))
                 return urlopen(url)
-            else:
-                return urlopen(self.__site_url_home)
+            except Exception as e:
+                print(url)
+                return self.__open_url()
 
-        except Exception as e:
-            self.__handler_exception(e, 'not correct url')
-            sys.exit(8)
+        else:
+            try:
+                return urlopen(self.__site_url_home)
+            except Exception as e:
+                self.__handler_exception(e, 'not correct url')
+                sys.exit(8)
 
     def __handler_exception(self, e: Exception, text: str = None) -> bool:
         if text:
