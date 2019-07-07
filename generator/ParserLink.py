@@ -64,7 +64,10 @@ class ParserLink:
                 print("url={url} temp_url={url_tmp}".format(url=self.__urls.__len__(), url_tmp=self.__urls_tmp.__len__()))
                 return urlopen(url)
             except Exception as e:
-                print(url)
+                for key,page in enumerate(self.__urls):
+                    if page == url:
+                        del self.__urls[key]
+                        break
                 return self.__open_url()
 
         else:
