@@ -23,7 +23,6 @@ class Sitemap:
         self.__set_last_updated_seo()
 
     def __set_catalog_products(self) -> None:
-
         try:
             cursor = Db().connect().cursor(dictionary=True)
             cursor.execute('SELECT id,CONCAT(purl,".html") `purl`,IFNULL(updated,created) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
@@ -145,10 +144,14 @@ class Sitemap:
         date = str(date)
 
         try:
-            return date.replace(' ', 'T') + '+00:00'
+            date = date.replace(' ', 'T') + '+00:00'
+            if re.search('T', date):
+                return date + '+00:00'
+            else:
+                return date + 'T+00:00'
         except Exception as e:
             print(url)
-            send_telegram('Generate sitemap error {url} {e}'.format(url=url,e=e))
+            send_telegram('Generate sitemap error {url} {e}'.format(url=url, e=e))
             sys.exit(4)
 
     def __get_last_updated_categories(self, purl: str) -> str:
