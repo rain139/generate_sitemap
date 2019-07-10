@@ -144,7 +144,7 @@ class Sitemap:
         date = str(date)
 
         try:
-            date = date.replace(' ', 'T') + '+00:00'
+            date = date.replace(' ', 'T')
             if re.search('T', date):
                 return date + '+00:00'
             else:
