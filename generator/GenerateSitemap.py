@@ -148,7 +148,7 @@ class Sitemap:
             if re.search('T', date):
                 return date + '+00:00'
             else:
-                return date + 'T+00:00'
+                return date + 'T10:04:10+00:00'
         except Exception as e:
             print(url)
             send_telegram('Generate sitemap error {url} {e}'.format(url=url, e=e))
