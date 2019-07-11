@@ -36,17 +36,17 @@ class ParserLink:
 
                 href = str(tag.get('href'))
 
-                if re.search('[a-zA-Z]//', href):
+                if re.search('[a-zA-Z]//|page=|sort=|mailto:|viber:|whatsapp:|modal_class|changeView', href):
                     continue
 
                 if re.search('http|wwww', href) and href.find(self.__site_url_home) == -1:
                     continue
 
-                if re.search('page=|sort=|mailto:|viber:|whatsapp:|modal_class|changeView', href):
-                    continue
-
                 if href.find(self.__site_url_home) == -1:
                     href = self.__site_url_home + '/' + href.strip('/')
+
+                if not re.search('html', href) and href != 'https://ksena.com.ua':
+                    href = href.strip('/') + '/'
 
                 if href not in self.__urls and href not in self.__urls_tmp and href != '/' \
                         and not re.search('(jpg|png|pdf|gif|jpeg|svg|txt|#|None)', href, re.IGNORECASE):
