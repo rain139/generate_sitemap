@@ -149,7 +149,7 @@ class Sitemap:
                 select_date = time.strptime(date, "%Y-%m-%d %H:%M:%S")
                 min_date = time.strptime(env('START_DATE', '2019-07-10 22:00:50'), "%Y-%m-%d %H:%M:%S")
                 if min_date > select_date:
-                    date = select_date
+                    date = select_date.replace(' ', 'T')
             except ValueError:
                 pass
 
