@@ -117,7 +117,7 @@ class Sitemap:
             send_telegram('Sitemap ' + str(e))
 
     def __get_lastmod(self, url: str) -> str:
-        date = env('START_DATE', '2019-07-03 22:00:50')
+        date = env('START_DATE',  '2019-07-10 22:00:50')
 
         url = url.strip('/')
         purl = url.split('/')[len(url.split('/')) - 1]
