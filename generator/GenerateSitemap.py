@@ -1,8 +1,9 @@
 import re
 from generator.Db import Db
 import sys
-from generator.Helpers import env,send_telegram
+from generator.Helpers import env, send_telegram
 from pymongo import MongoClient
+import time
 
 
 class Sitemap:
@@ -25,7 +26,8 @@ class Sitemap:
     def __set_catalog_products(self) -> None:
         try:
             cursor = Db().connect().cursor(dictionary=True)
-            cursor.execute('SELECT id,CONCAT(purl,".html") `purl`,IFNULL(updated,created) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
+            cursor.execute(
+                'SELECT id,CONCAT(purl,".html") `purl`,IFNULL(updated,created) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
             tovars = cursor.fetchall()
         except Exception as e:
             send_telegram('Sitemap ' + str(e))
@@ -36,14 +38,14 @@ class Sitemap:
 
         cursor.close()
 
-    def __set_blog_articles(self)-> None:
+    def __set_blog_articles(self) -> None:
         try:
             client = MongoClient()
             db = client.ksena
             for article in db.blogArticles.find():
-                self.__blog[article['purl']+'.html'] = article['created']
+                self.__blog[article['purl'] + '.html'] = article['created']
         except Exception as e:
-            send_telegram('Sitemap ' +str(e))
+            send_telegram('Sitemap ' + str(e))
 
     def generate(self):
 
@@ -57,7 +59,7 @@ class Sitemap:
             file = open('/' + self.__dir_project + '/sitemap.xml', "w")
             file.write(self.__xml)
         except Exception as e:
-            send_telegram('Sitemap ' +str(e))
+            send_telegram('Sitemap ' + str(e))
 
     def __get_priory(self, url: str) -> float:
 
@@ -82,18 +84,17 @@ class Sitemap:
                      '      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n' \
                      '      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9\n' \
                      '          http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">\n' \
-                     '<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->\n\n\n' \
-
+                     '<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->\n\n\n'
 
     def __max_last_update_catalog(self) -> str:
-        try:
-            cursor = Db().connect().cursor(dictionary=True)
-            cursor.execute(
-                'SELECT MAX(IFNULL(updated,created)) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
-            max_updated = cursor.fetchone()
-            return max_updated['updated']
-        except Exception as e:
-            send_telegram('Sitemap ' + str(e))
+            try:
+                cursor = Db().connect().cursor(dictionary=True)
+                cursor.execute(
+                    'SELECT MAX(IFNULL(updated,created)) `updated` FROM `tovars` WHERE visible = 1 and deleted = 0')
+                max_updated = cursor.fetchone()
+                return max_updated['updated']
+            except Exception as e:
+                send_telegram('Sitemap ' + str(e))
 
     def __set_last_updated_seo(self) -> None:
         try:
@@ -106,7 +107,7 @@ class Sitemap:
         except Exception as e:
             send_telegram('Sitemap ' + str(e))
 
-    def __get_last_updated_blog(self)-> str:
+    def __get_last_updated_blog(self) -> str:
         try:
             client = MongoClient()
             db = client.ksena
@@ -140,6 +141,14 @@ class Sitemap:
 
         elif re.search('/blog', url):
             date = self.__get_last_updated_blog()
+
+        try:
+            select_date = time.strptime(date, "%Y-%m-%d %H:%M:%S")
+            min_date = time.strptime(env('START_DATE', '2019-07-10 22:00:50'), "%Y-%m-%d %H:%M:%S")
+            if min_date > select_date:
+                date = select_date
+        except ValueError:
+            pass
 
         date = str(date)
 
@@ -176,14 +185,14 @@ class Sitemap:
         except Exception as e:
             send_telegram('Sitemap ' + str(e))
 
-    def __set_block__url(self, url: str, priory: float)->None:
+    def __set_block__url(self, url: str, priory: float) -> None:
         date = self.__get_lastmod(url)
 
-        self.__xml +='<url>\n'\
-        '   <loc>{site}</loc>\n'\
-        '   <lastmod>{date}</lastmod>\n'\
-        '   <priority>{priory}</priority>\n'\
-        '</url>\n'.format(site=url, date=date, priory=priory)
+        self.__xml += '<url>\n' \
+                      '   <loc>{site}</loc>\n' \
+                      '   <lastmod>{date}</lastmod>\n' \
+                      '   <priority>{priory}</priority>\n' \
+                      '</url>\n'.format(site=url, date=date, priory=priory)
 
-    def __set_bottom(self)-> None:
+    def __set_bottom(self) -> None:
         self.__xml += '\n\n</urlset>'
