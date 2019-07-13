@@ -142,15 +142,19 @@ class Sitemap:
         elif re.search('/blog', url):
             date = self.__get_last_updated_blog()
 
-        try:
-            select_date = time.strptime(date, "%Y-%m-%d %H:%M:%S")
-            min_date = time.strptime(env('START_DATE', '2019-07-10 22:00:50'), "%Y-%m-%d %H:%M:%S")
-            if min_date > select_date:
-                date = select_date
-        except ValueError:
-            pass
-
         date = str(date)
+
+        if date:
+            try:
+                select_date = time.strptime(date, "%Y-%m-%d %H:%M:%S")
+                min_date = time.strptime(env('START_DATE', '2019-07-10 22:00:50'), "%Y-%m-%d %H:%M:%S")
+                if min_date > select_date:
+                    date = select_date
+            except ValueError:
+                pass
+
+
+
 
         try:
             date = date.replace(' ', 'T')
